@@ -8,34 +8,34 @@ export default class SnakeGame extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      delay: INITIAL_DELAY,
       gameState: null,
-      table: new Array(ROWS).fill(null).map(() => new Array(COLS).fill(null)),
-      logic: new SnakeGameLogic(),
-      timeoutID: null,
-      intervalID: null
+      table: new Array(ROWS).fill(null).map(() => new Array(COLS).fill(null))
     };
     this.handleKeydown = throttle(this.handleKeydown.bind(this), 100);
     this.nextFrame = this.nextFrame.bind(this);
+    this.delay = INITIAL_DELAY;
+    this.timeoutID = null;
+    this.intervalID = null;
+    this.logic = new SnakeGameLogic();
   }
   componentDidMount() {
     this.updateTable();
   }
   init = () => {
-    const delay = INITIAL_DELAY;
+    this.delay = INITIAL_DELAY;
+
     const table = new Array(ROWS)
       .fill(null)
       .map(() => new Array(COLS).fill(null));
-    const logic = new SnakeGameLogic();
+    this.logic = new SnakeGameLogic();
+
     this.setState({
-      delay,
-      table,
-      logic
+      table
     });
   };
   updateTable = () => {
-    const { logic, table } = this.state;
-    const { joints, fruit: f } = logic;
+    const { table } = this.state;
+    const { joints, fruit: f } = this.logic;
     if (!joints || !f) return;
     for (let r of table) {
       r.fill(null);
@@ -58,33 +58,27 @@ export default class SnakeGame extends Component {
     this.setState({
       gameState: "running"
     });
-    const intervalID = setInterval(() => {
-      this.setState(prevState => ({
-        delay: prevState.delay * DELAY_EXPONENT
-      }));
+    this.intervalID = setInterval(() => {
+      this.delay *= DELAY_EXPONENT;
     }, 1000);
-    this.setState({
-      intervalID
-    });
     this.nextFrame();
   };
   handleKeydown = e => {
-    const { logic } = this.state;
     switch (e.key) {
       case "ArrowUp":
-        logic.up();
+        this.logic.up();
         this.nextFrame();
         break;
       case "ArrowDown":
-        logic.down();
+        this.logic.down();
         this.nextFrame();
         break;
       case "ArrowLeft":
-        logic.left();
+        this.logic.left();
         this.nextFrame();
         break;
       case "ArrowRight":
-        logic.right();
+        this.logic.right();
         this.nextFrame();
         break;
       default:
@@ -92,12 +86,8 @@ export default class SnakeGame extends Component {
     }
   };
   nextFrame = () => {
-    const { timeoutID, logic } = this.state;
-    clearTimeout(timeoutID);
-    this.setState({
-      timeoutID: null
-    });
-    const proceed = logic.nextState();
+    clearTimeout(this.timeoutID);
+    const proceed = this.logic.nextState();
     if (!proceed) {
       this.setState({
         gameState: "end"
@@ -105,29 +95,20 @@ export default class SnakeGame extends Component {
       this.cleanup();
     } else {
       this.updateTable();
-      const timeoutID = setTimeout(this.nextFrame, this.state.delay);
-      this.setState({
-        timeoutID
-      });
+      this.timeoutID = setTimeout(this.nextFrame, this.delay);
     }
   };
   cleanup = () => {
-    const { logic } = this.state;
     document.removeEventListener("keydown", this.handleKeydown);
-    clearTimeout(this.state.timeoutID);
-    clearInterval(this.state.intervalID);
-    this.setState({
-      timeoutID: null,
-      intervalID: null
-    });
-    logic.cleanup && logic.cleanup();
+    clearTimeout(this.timeoutID);
+    clearInterval(this.intervalID);
   };
   render() {
-    const { gameState, table, logic } = this.state;
+    const { gameState, table } = this.state;
     return (
       <SnakeGameView
-        key={gameState}
-        logic={logic}
+        key={this.logic}
+        logic={this.logic}
         table={table}
         gameState={gameState}
         init={this.init}

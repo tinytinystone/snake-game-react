@@ -7,7 +7,6 @@ export default class SnakeGameView extends Component {
   handleClickRestart = () => {
     this.props.init();
     this.props.updateTable();
-    console.log("확인");
     this.props.start();
   };
   render() {
